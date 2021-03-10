@@ -25,6 +25,9 @@ export class Auth {
     open = open || location.pathname
     LocalStorage.set(this.LOCALSTORAGE_LOGIN_KEY, { social, redirect, open })
     const url = await this.getSocialUrl({ social, redirect })
+    if (this.config.debug) {
+      console.log('loginBySocial redirect to', url)
+    }
     location.href = url.replace(/^"/, '').replace(/"$/, '')
   }
 
@@ -35,11 +38,17 @@ export class Auth {
   }
 
   async getTokenBySocial ({ social, redirect, search = '?' }) {
-    const path = this.createPath(this.config.api.socialToken, { social, search, redirect })
-    const result = await this.request({ path })
+    if (this.config.debug) {
+      console.log('getTokenBySocial: ', social, search)
+    }
     try {
+      const path = this.createPath(this.config.api.socialToken, { social, search, redirect })
+      const result = await this.request({ path })
       return JSON.parse(result)
     } catch (e) {
+      if (this.config.debug) {
+        console.log('Error getTokenBySocial', e)
+      }
       return null
     }
   }
@@ -81,6 +90,7 @@ export class Auth {
 
   async refreshToken (token) {
     try {
+      const headers = await this.getHeaders(token)
       const result = await this.request({
         path: this.createPath(this.config.api.refreshToken),
         method: 'POST',
@@ -88,23 +98,37 @@ export class Auth {
       }, {
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
-          Authorization: `Bearer ${token.access_token}`
+          ...headers
         }
       })
       const newToken = JSON.parse(result)
+      if (this.config.debug) {
+        console.log('refreshToken token: ', newToken)
+      }
       if (newToken) {
         this.setToken(newToken)
         return newToken
       }
     } catch (e) {
+      if (this.config.debug) {
+        console.log('Error refreshToken: ', e)
+      }
       this.removeToken()
       return null
     }
   }
 
+  async getHeaders (token) {
+    token = token|| await this.getToken()
+    return token ? { Authorization: `Bearer ${token.access_token}` } : {}
+  }
+
   setToken (token) {
     LocalStorage.set(this.LOCALSTORAGE_TOKEN_KEY, token)
     this.token = token
+    if (this.config.debug) {
+      console.log('setToken', token)
+    }
   }
 
   removeToken () {
@@ -123,13 +147,16 @@ export class Auth {
   async logout () {
     try {
       const token = await this.getToken()
+      const headers = await this.getHeaders(token)
+
       await this.request({
         path: this.createPath(this.config.api.logout),
         method: 'POST',
-        params: { refreshToken: token.refreshToken }
+        params: { refresh_token: token.refresh_token }
       }, {
         headers: {
-          'Content-Type': 'application/json;charset=UTF-8'
+          'Content-Type': 'application/json;charset=UTF-8',
+          ...headers
         }
       })
     } finally {
