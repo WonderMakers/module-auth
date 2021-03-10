@@ -159,6 +159,8 @@ export class Auth {
           ...headers
         }
       })
+    } catch (e) {
+
     } finally {
       this.removeToken()
     }
