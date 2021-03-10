@@ -1,11 +1,12 @@
 {
   "name": "auth",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Auth",
   "repository": {
     "type": "git",
     "url": "https://git.hzberg.com/modules/auth"
   },
+  "main": "dist/nuxt.auth.module.js",
   "scripts": {
     "lib-nuxt-module": "webpack --config ./src/nuxt-module/webpack.config.js",
     "lib-nuxt-plugin": "webpack --config ./src/nuxt-plugin/webpack.config.js",
