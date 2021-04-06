@@ -4,18 +4,15 @@ export default ({ app }, inject) => {
   const options = JSON.parse(`<%= JSON.stringify(options).replace(/^"/, "'").replace(/"$/, "'") %>`)
   const auth = new Auth(options)
   const isDebug = options.debug
-  let ready = false
-  // const isDev = app.context.isDev
 
   app.router.beforeEach(async (to, from, next) => {
     if (process.server) return next()
     if (isDebug) {
       console.log('beforeEnter', to)
     }
-    if (!ready) {
+    if (options.socialRedirectPath === to.path) {
       const result = await auth.loginSocialComplete()
       await auth.getToken()
-      ready = true
       if (result.redirect) {
         if (isDebug) {
           console.log('redirect', result.redirect)

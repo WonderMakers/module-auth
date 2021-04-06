@@ -1,4 +1,4 @@
-const defaultOptions = require('./config')
+const defaultOptions = require('./options')
 const path = require('path')
 
 export default function (moduleOptions = {}) {

@@ -1,0 +1,15 @@
+{
+  "namespace": "Auth",
+  "socials": [],
+  "endpoint": "",
+  "redirect": "/",
+  "socialRedirectPath": "/",
+  "debug": false,
+  "useFingerprint": false,
+  "api": {
+    "socialUrl": "/user/auth/client-url/%{social}",
+    "socialToken": "/user/auth",
+    "refreshToken": "/user/auth/refresh-token",
+    "logout": "/user/auth/logout"
+}
+}

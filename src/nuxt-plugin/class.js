@@ -1,20 +1,40 @@
+import Fingerprint2 from 'fingerprintjs2'
 import { LocalStorage } from '../../utils/local-storage.js'
 
 export class Auth {
-  constructor (config) {
-    this.config = config
+  constructor (options) {
+    this.options = options
     this.token = null
-    this.LOCALSTORAGE_TOKEN_KEY = `${config.namespace}:token`
-    this.LOCALSTORAGE_LOGIN_KEY = `${config.namespace}:login`
+    this.LOCALSTORAGE_TOKEN_KEY = `${options.namespace}:token`
+    this.LOCALSTORAGE_LOGIN_KEY = `${options.namespace}:login`
+    this.fingerprint = ''
+    this.requestInterceptors = []
   }
 
   getRedirectUri () {
-    return location.origin + '/'
+    return location.origin + this.options.socialRedirectPath
+  }
+
+  async getFingerPrint () {
+    if (this.fingerprint) {
+      return this.fingerprint
+    } else {
+      return new Promise((resolve) => {
+        Fingerprint2.get((components) => {
+          const values = components.map(component => component.value)
+          this.fingerprint = Fingerprint2.x64hash128(values.join(''), 31)
+          resolve(this.fingerprint)
+        })
+      })
+    }
   }
 
   login ({ social, redirect }) {
-    if (social && this.config.socials.includes(social)) {
-      return this.loginBySocial({ social, redirect })
+    if (this.options.debug) {
+      console.log('login', social, redirect)
+    }
+    if (social && this.options.socials.includes(social)) {
+      return this.loginBySocial({ social, open: redirect })
     } else {
       return Promise.reject(Error('Login with such params is not supported'))
     }
@@ -24,33 +44,52 @@ export class Auth {
     const redirect = this.getRedirectUri()
     open = open || location.pathname
     LocalStorage.set(this.LOCALSTORAGE_LOGIN_KEY, { social, redirect, open })
-    const url = await this.getSocialUrl({ social, redirect })
-    if (this.config.debug) {
+    const url = await this.getSocialUrl({ social, redirect_uri: redirect })
+    if (this.options.debug) {
       console.log('loginBySocial redirect to', url)
     }
     location.href = url.replace(/^"/, '').replace(/"$/, '')
   }
 
-  getSocialUrl ({ social, redirect }) {
-    return this.request({
-      path: this.createPath(this.config.api.socialUrl, { social, redirect })
-    })
+  getSocialUrl ({ social, redirect_uri }) {
+    const params = { social, redirect_uri }
+    const path = this.transformPath(this.options.api.socialUrl, params)
+    return this.request('getSocialUrl', { path, params })
   }
 
   async getTokenBySocial ({ social, redirect, search = '?' }) {
-    if (this.config.debug) {
+    if (this.options.debug) {
       console.log('getTokenBySocial: ', social, search)
     }
     try {
-      const path = this.createPath(this.config.api.socialToken, { social, search, redirect })
-      const result = await this.request({ path })
+      const params = this.splitSearchString(search)
+      params.authclient = social
+      params.redirect_uri = redirect
+
+      if (this.options.useFingerprint) {
+        params.fingerprint = await this.getFingerPrint()
+      }
+
+      const path = this.transformPath(this.options.api.socialToken, params)
+      const result = await this.request('getTokenBySocial', { path, params })
       return JSON.parse(result)
     } catch (e) {
-      if (this.config.debug) {
+      if (this.options.debug) {
         console.log('Error getTokenBySocial', e)
       }
       return null
     }
+  }
+
+  splitSearchString (searchString = '?') {
+    return searchString.replace(/^\?/, '').split('&').reduce((res, item) => {
+      res[item.split('=')[0]] = item.split('=')[1]
+      return res
+    }, {})
+  }
+
+  toBodyString (params = {}) {
+    return Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')
   }
 
   async loginSocialComplete () {
@@ -91,18 +130,17 @@ export class Auth {
   async refreshToken (token) {
     try {
       const headers = await this.getHeaders(token)
-      const result = await this.request({
-        path: this.createPath(this.config.api.refreshToken),
-        method: 'POST',
-        params: { refresh_token: token.refresh_token }
-      }, {
+      const refresh_token = token.refresh_token
+      const params = { refresh_token }
+      const path = this.transformPath(this.options.api.refreshToken, params)
+      const result = await this.request('refreshToken', { path, params, method: 'POST' }, {
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
           ...headers
         }
       })
       const newToken = JSON.parse(result)
-      if (this.config.debug) {
+      if (this.options.debug) {
         console.log('refreshToken token: ', newToken)
       }
       if (newToken) {
@@ -110,7 +148,7 @@ export class Auth {
         return newToken
       }
     } catch (e) {
-      if (this.config.debug) {
+      if (this.options.debug) {
         console.log('Error refreshToken: ', e)
       }
       this.removeToken()
@@ -126,7 +164,7 @@ export class Auth {
   setToken (token) {
     LocalStorage.set(this.LOCALSTORAGE_TOKEN_KEY, token)
     this.token = token
-    if (this.config.debug) {
+    if (this.options.debug) {
       console.log('setToken', token)
     }
   }
@@ -136,7 +174,7 @@ export class Auth {
     this.token = null
   }
 
-  createPath (path, params = {}) {
+  transformPath (path, params = {}) {
     let result = path
     Object.keys(params).forEach(key => {
       result = result.replace(`%{${key}}`, params[key])
@@ -148,12 +186,10 @@ export class Auth {
     try {
       const token = await this.getToken()
       const headers = await this.getHeaders(token)
-
-      await this.request({
-        path: this.createPath(this.config.api.logout),
-        method: 'POST',
-        params: { refresh_token: token.refresh_token }
-      }, {
+      const refresh_token = token.refresh_token
+      const params = { refresh_token }
+      const path = this.transformPath(this.options.api.logout, params)
+      await this.request('logout', { path, params, method: 'POST' }, {
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
           ...headers
@@ -166,26 +202,50 @@ export class Auth {
     }
   }
 
-  request ({ method = 'GET', path = '/', params = {} }, options = {}) {
-    return new Promise((resolve, reject) => {
+  request (name, { method = 'GET', path = '/', params = {} }, options = {}) {
+    return new Promise(async (resolve, reject) => {
       const request = new XMLHttpRequest()
-      const url = this.config.endpoint + path
-      request.open(method, url, true)
+      const url = this.options.endpoint + path
+      const requestData = { name, method, url, params, options }
+      let data
 
-      if (options.headers) {
-        for (const header in options.headers) {
-          request.setRequestHeader(header, options.headers[header])
-        }
-      }
+      await this.transformRequestData(requestData)
 
       request.onload = () => resolve(request.response)
       request.onerror = () => reject(request.response)
 
       if (method === 'POST') {
-        request.send(JSON.stringify(params))
+        request.open(requestData.method, requestData.url, true)
+        data = JSON.stringify(params)
       } else {
-        request.send()
+        const bodyString = this.toBodyString(params)
+        const url = requestData.url + (bodyString ? '?' + bodyString : '')
+        request.open(requestData.method, url, true)
       }
+
+      if (requestData.options && requestData.options.headers) {
+        for (const header in requestData.options.headers) {
+          request.setRequestHeader(header, requestData.options.headers[header])
+        }
+      }
+      request.send(data)
     })
+  }
+
+  async transformRequestData (requestData) {
+    const iterator = this.requestInterceptors.entries()
+    let value = iterator.next().value
+
+    while (value) {
+      const interceptorFn = value[1]
+      requestData = await interceptorFn(requestData)
+      value = iterator.next().value
+    }
+
+    return requestData
+  }
+
+  async addRequestInterceptor (fn) {
+    this.requestInterceptors.push(fn)
   }
 }

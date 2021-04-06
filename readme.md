@@ -1,17 +1,18 @@
 ### Install
-    npm i git+https://git.hzberg.com/modules/auth#1.0.3
+    npm i git+https://git.hzberg.com/modules/auth#1.1.0
     
 ### Setup
 ```nuxt.config.js```
 
     buildModules: [
-      'auth'
+        'auth'
     ],
     
 ```nuxt.config.js```
 
     auth: {
-      namespace: 'Auth',
+        namespace: 'Auth',
+        
         // Socials list ['vkontakte', 'google', ...]
         socials: [],
         
@@ -24,13 +25,22 @@
         // Debug mode
         debug: false,
         
+        // Will pass a fingerprinting pin when receiving a token
+        useFingerprint: false,
+        
         api: {
-          socialUrl: `/user/auth/client-url/%{social}?redirect_uri=%{redirect}`,
-          socialToken: `/user/auth%{search}&authclient=%{social}&redirect_uri=%{redirect}`,
-          refreshToken: '/user/auth/refresh-token',
-          logout: '/user/auth/logout'
+            socialUrl: `/user/auth/client-url/%{social}`,
+            socialToken: `/user/auth`,
+            refreshToken: '/user/auth/refresh-token',
+            logout: '/user/auth/logout'
         }
     },
+    
+### Add request interceptor
+
+    this.$auth.addRequestInterceptor(async ({ name, method, url, params, options }) => {
+        return { name, method, url, params, options }
+    })
     
 ### Usage
 
