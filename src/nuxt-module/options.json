@@ -11,5 +11,5 @@
     "socialToken": "/user/auth",
     "refreshToken": "/user/auth/refresh-token",
     "logout": "/user/auth/logout"
-}
+  }
 }

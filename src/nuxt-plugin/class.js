@@ -1,6 +1,18 @@
 import Fingerprint2 from 'fingerprintjs2'
 import { LocalStorage } from '../../utils/local-storage.js'
 
+const finderprintOptios = { excludes: {
+    userAgent: true,
+    language: true,
+    availableScreenResolution: true,
+    plugins: true,
+    webgl: true,
+    canvas: true,
+    audio: true,
+    enumerateDevices: true,
+    webglVendorAndRenderer: true
+  } }
+
 export class Auth {
   constructor (options) {
     this.options = options
@@ -20,7 +32,7 @@ export class Auth {
       return this.fingerprint
     } else {
       return new Promise((resolve) => {
-        Fingerprint2.get((components) => {
+        Fingerprint2.get(finderprintOptios, (components) => {
           const values = components.map(component => component.value)
           this.fingerprint = Fingerprint2.x64hash128(values.join(''), 31)
           resolve(this.fingerprint)
