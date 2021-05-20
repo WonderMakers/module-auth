@@ -11,7 +11,8 @@ const finderprintOptios = { excludes: {
     audio: true,
     enumerateDevices: true,
     webglVendorAndRenderer: true
-  } }
+  }
+}
 
 export class Auth {
   constructor (options) {
@@ -24,7 +25,7 @@ export class Auth {
   }
 
   getRedirectUri () {
-    return location.origin + this.options.socialRedirectPath
+    return location.origin + this.options.callbackPath
   }
 
   async getFingerPrint () {
@@ -115,7 +116,7 @@ export class Auth {
         search: location.search,
         redirect: login.redirect
       })
-      if (token) {
+      if (token && token.access_token) {
         this.setToken(token)
         result.redirect = login.open
       }
@@ -207,8 +208,6 @@ export class Auth {
           ...headers
         }
       })
-    } catch (e) {
-
     } finally {
       this.removeToken()
     }

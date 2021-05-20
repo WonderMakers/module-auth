@@ -1,5 +1,5 @@
 ### Install
-    npm i git+https://git.hzberg.com/modules/auth#1.1.0
+    npm i git+https://git.hzberg.com/modules/auth#1.1.2
     
 ### Setup
 ```nuxt.config.js```
@@ -21,6 +21,8 @@
         
         // Default redirect URL if not autorized
         redirect: '/',
+        
+        callbackPath: '/',
         
         // Debug mode
         debug: false,

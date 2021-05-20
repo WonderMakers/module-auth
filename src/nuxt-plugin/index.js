@@ -10,7 +10,7 @@ export default ({ app }, inject) => {
     if (isDebug) {
       console.log('beforeEnter', to)
     }
-    if (options.socialRedirectPath === to.path) {
+    if (options.callbackPath === to.path) {
       const result = await auth.loginSocialComplete()
       await auth.getToken()
       if (result.redirect) {

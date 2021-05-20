@@ -3,7 +3,7 @@
   "socials": [],
   "endpoint": "",
   "redirect": "/",
-  "socialRedirectPath": "/",
+  "callbackPath": "/",
   "debug": false,
   "useFingerprint": false,
   "api": {
