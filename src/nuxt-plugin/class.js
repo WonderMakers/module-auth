@@ -82,9 +82,15 @@ export class Auth {
       if (this.options.useFingerprint) {
         params.fingerprint = await this.getFingerPrint()
       }
-
+  
+      const headers = await this.getHeaders()
       const path = this.transformPath(this.options.api.socialToken, params)
-      const result = await this.request('getTokenBySocial', { path, params })
+      const result = await this.request('getTokenBySocial', { path, params }, {
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+          ...headers
+        }
+      })
       return JSON.parse(result)
     } catch (e) {
       if (this.options.debug) {
@@ -169,7 +175,7 @@ export class Auth {
   }
 
   async getHeaders (token) {
-    token = token|| await this.getToken()
+    token = token || await this.getToken()
     return token ? { Authorization: `Bearer ${token.access_token}` } : {}
   }
 
