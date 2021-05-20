@@ -13,12 +13,7 @@ export default ({ app }, inject) => {
     if (options.callbackPath === to.path) {
       const result = await auth.loginSocialComplete()
       await auth.getToken()
-      if (result.redirect) {
-        if (isDebug) {
-          console.log('redirect', result.redirect)
-        }
-        return next(result.redirect)
-      }
+      return next(result.redirect)
     }
 
     next()
