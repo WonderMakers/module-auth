@@ -14,6 +14,10 @@ const finderprintOptios = { excludes: {
   }
 }
 
+const REQUESTS = {
+  refresh: null
+}
+
 export class Auth {
   constructor (options) {
     this.options = options
@@ -145,33 +149,43 @@ export class Auth {
     }
   }
 
-  async refreshToken (token) {
-    try {
-      const headers = await this.getHeaders(token)
-      const refresh_token = token.refresh_token
-      const params = { refresh_token }
-      const path = this.transformPath(this.options.api.refreshToken, params)
-      const result = await this.request('refreshToken', { path, params, method: 'POST' }, {
-        headers: {
-          'Content-Type': 'application/json;charset=UTF-8',
-          ...headers
+  refreshToken (token) {
+    if (!REQUESTS.refresh) {
+      REQUESTS.refresh = new Promise(async (resolve) => {
+        try {
+          const headers = await this.getHeaders(token)
+          const refresh_token = token.refresh_token
+          const params = { refresh_token }
+          const path = this.transformPath(this.options.api.refreshToken, params)
+          const result = await this.request('refreshToken', { path, params, method: 'POST' }, {
+            headers: {
+              'Content-Type': 'application/json;charset=UTF-8',
+              ...headers
+            }
+          })
+          const newToken = JSON.parse(result)
+          if (this.options.debug) {
+            console.log('refreshToken token: ', newToken)
+          }
+          if (newToken) {
+            this.setToken(newToken)
+            resolve(newToken)
+          } else {
+            resolve(null)
+          }
+        } catch (e) {
+          if (this.options.debug) {
+            console.log('Error refreshToken: ', e)
+          }
+          this.removeToken()
+          resolve(null)
+        } finally {
+          REQUESTS.refresh = null
         }
       })
-      const newToken = JSON.parse(result)
-      if (this.options.debug) {
-        console.log('refreshToken token: ', newToken)
-      }
-      if (newToken) {
-        this.setToken(newToken)
-        return newToken
-      }
-    } catch (e) {
-      if (this.options.debug) {
-        console.log('Error refreshToken: ', e)
-      }
-      this.removeToken()
-      return null
     }
+    
+    return REQUESTS.refresh
   }
 
   async getHeaders (token) {
