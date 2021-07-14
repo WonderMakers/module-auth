@@ -13,10 +13,12 @@ export default ({ app }, inject) => {
     if (options.callbackPath === to.path) {
       const result = await auth.loginSocialComplete()
       await auth.getToken()
-      return next(result.redirect)
+      if (result) {
+        location.href = result.redirect
+      }
+    } else {
+      next()
     }
-
-    next()
   })
 
   app.router.beforeResolve(async (to, from, next) => {

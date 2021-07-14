@@ -128,9 +128,10 @@ export class Auth {
       })
       if (token && token.access_token) {
         this.setToken(token)
+        return result
       }
     }
-    return result
+    return null
   }
 
   async getToken () {
