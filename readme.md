@@ -27,6 +27,9 @@
         // Debug mode
         debug: false,
         
+        // Background check auth
+        backgroundCheck: true,
+        
         // Will pass a fingerprinting pin when receiving a token
         useFingerprint: false,
         

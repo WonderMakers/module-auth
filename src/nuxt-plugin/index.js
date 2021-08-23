@@ -6,11 +6,14 @@ export default ({ app }, inject) => {
   const isDebug = options.debug
 
   app.router.beforeEach(async (to, from, next) => {
-    if (process.server) {
+    if (options.backgroundCheck) {
+      next()
+    } else if (process.server) {
       return next()
     }
+    
     if (isDebug) {
-      console.log('beforeEnter', to)
+      console.log('beforeEach', to)
     }
     if (options.callbackPath === to.path) {
       const result = await auth.loginSocialComplete()
@@ -21,7 +24,9 @@ export default ({ app }, inject) => {
         }
       }
     }
-    next()
+    if (!options.backgroundCheck) {
+      next()
+    }
   })
 
   app.router.beforeResolve(async (to, from, next) => {
@@ -39,11 +44,12 @@ export default ({ app }, inject) => {
         const redirect = typeof authOptions === 'object' ? authOptions.redirect : auth.config.redirect
 
         if (!token) {
+          const redirectURL = typeof redirect === 'function' ? redirect() : redirect
           if (isDebug) {
             console.log('token', token)
-            console.log('redirect', redirect)
+            console.log('redirect', redirectURL)
           }
-          return next(redirect)
+          return next(redirectURL)
         }
       }
     } else {

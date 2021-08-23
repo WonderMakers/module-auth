@@ -6,6 +6,7 @@
   "callbackPath": "/cb",
   "debug": false,
   "useFingerprint": false,
+  "backgroundCheck": true,
   "api": {
     "socialUrl": "/user/auth/client-url/%{social}",
     "socialToken": "/user/auth",
