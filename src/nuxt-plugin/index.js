@@ -6,23 +6,28 @@ export default ({ app }, inject) => {
   const isDebug = options.debug
 
   app.router.beforeEach(async (to, from, next) => {
-    if (process.server) return next()
+    if (process.server) {
+      return next()
+    }
     if (isDebug) {
       console.log('beforeEnter', to)
     }
     if (options.callbackPath === to.path) {
       const result = await auth.loginSocialComplete()
-      await auth.getToken()
       if (result) {
-        location.href = result.redirect
+        await auth.getToken()
+        if (result.redirect) {
+          location.href = result.redirect
+        }
       }
-    } else {
-      next()
     }
+    next()
   })
 
   app.router.beforeResolve(async (to, from, next) => {
-    if (process.server) return next()
+    if (process.server) {
+      return next()
+    }
     if (isDebug) {
       console.log('beforeResolve', to)
     }

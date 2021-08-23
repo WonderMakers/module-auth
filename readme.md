@@ -22,7 +22,7 @@
         // Default redirect URL if not autorized
         redirect: '/',
         
-        callbackPath: '/',
+        callbackPath: '/cb',
         
         // Debug mode
         debug: false,
