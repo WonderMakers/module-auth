@@ -117,9 +117,9 @@ export class Auth {
 
   async loginSocialComplete () {
     const login = LocalStorage.get(this.LOCALSTORAGE_LOGIN_KEY)
-    const result = { redirect: login.open }
 
     if (login && login.social) {
+      const result = { redirect: login.open }
       LocalStorage.remove(this.LOCALSTORAGE_LOGIN_KEY)
       const token = await this.getTokenBySocial({
         social: login.social,
