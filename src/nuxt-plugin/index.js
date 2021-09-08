@@ -22,6 +22,8 @@ export default ({ app }, inject) => {
         if (result.redirect) {
           location.href = result.redirect
         }
+      } else {
+        next()
       }
     }
     if (!options.backgroundCheck) {
